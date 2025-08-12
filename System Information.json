@@ -1,0 +1,8 @@
+{
+    "device_addresses": {
+        "oscilloscope": "TCPIP0::172.19.71.29::inst0::INSTR",
+        "ac_source": "TCPIP0::172.19.71.22::inst0::INSTR",
+        "electronic_load": "TCPIP0::172.19.71.25::inst0::INSTR",
+        "control_box": "TCPIP0::172.19.71.22::inst0::INSTR"
+    }
+}
