@@ -649,6 +649,16 @@ class CustomFunctionTab:
         )
         title_label.pack(side=tk.LEFT)
         
+        # 添加拖放提示
+        drag_hint = tk.Label(
+            title_frame,
+            text="(拖动行可调整顺序)",
+            font=('Microsoft YaHei', 9),
+            bg='#ffffff',
+            fg='#666666'
+        )
+        drag_hint.pack(side=tk.LEFT, padx=(10, 0), pady=(5, 0))
+        
         # 创建清空按钮
         clear_button = tk.Button(
             title_frame,
@@ -708,6 +718,12 @@ class CustomFunctionTab:
         self.left_tree_menu.add_command(label="下移", command=lambda: self.move_command("down"))
         self.left_tree_menu.add_separator()
         self.left_tree_menu.add_command(label="清空列表", command=self.clear_left_list)
+        
+        # 添加拖放功能
+        self.left_tree.bind("<ButtonPress-1>", self.on_drag_start)
+        self.left_tree.bind("<B1-Motion>", self.on_drag_motion)
+        self.left_tree.bind("<ButtonRelease-1>", self.on_drag_release)
+        self.drag_data = {"item": None, "initial_index": -1}
         
         # 绑定右键菜单事件
         self.left_tree.bind("<Button-3>", self.show_left_tree_popup)
@@ -1124,6 +1140,83 @@ class CustomFunctionTab:
         
         # 插入生成的示例格式
         text_widget.insert(tk.END, params_input)
+    
+    def on_drag_start(self, event):
+        """开始拖动操作"""
+        # 识别被点击的项
+        item = self.left_tree.identify_row(event.y)
+        if not item:
+            return
+            
+        # 确认是在表项上而不是在标题上点击
+        if self.left_tree.identify_region(event.x, event.y) == 'heading':
+            return
+            
+        # 保存被拖动的项和初始索引
+        self.drag_data["item"] = item
+        all_items = self.left_tree.get_children()
+        self.drag_data["initial_index"] = all_items.index(item)
+        
+        # 视觉反馈 - 选中被拖动的行
+        self.left_tree.selection_set(item)
+        # 更改光标为移动图标
+        self.left_tree.configure(cursor="exchange")
+    
+    def on_drag_motion(self, event):
+        """拖动过程中的处理"""
+        if not self.drag_data["item"]:
+            return
+            
+        # 高亮目标位置
+        target_item = self.left_tree.identify_row(event.y)
+        if target_item and self.drag_data["item"] != target_item:
+            # 仅在不同项之间移动时进行高亮
+            self.left_tree.selection_set(target_item)
+            # 当靠近顶部或底部时，自动滚动
+            if event.y < 30:  # 靠近顶部
+                self.left_tree.yview_scroll(-1, "units")
+            elif event.y > self.left_tree.winfo_height() - 30:  # 靠近底部
+                self.left_tree.yview_scroll(1, "units")
+    
+    def on_drag_release(self, event):
+        """释放拖动，完成操作"""
+        # 恢复默认光标
+        self.left_tree.configure(cursor="")
+        
+        if not self.drag_data["item"]:
+            return
+            
+        # 获取目标位置
+        target_item = self.left_tree.identify_row(event.y)
+        if not target_item or self.drag_data["item"] == target_item:
+            # 如果没有目标或与源相同，取消操作
+            self.drag_data["item"] = None
+            self.drag_data["initial_index"] = -1
+            return
+            
+        # 获取所有项和索引
+        all_items = self.left_tree.get_children()
+        source_index = self.drag_data["initial_index"]
+        target_index = all_items.index(target_item)
+        
+        # 在内存中移动命令
+        command = self.selected_commands.pop(source_index)
+        self.selected_commands.insert(target_index, command)
+        
+        # 刷新视图
+        self.update_left_tree()
+        
+        # 重新选择移动后的项
+        all_items = self.left_tree.get_children()  # 重新获取项列表，因为它们已经改变
+        if 0 <= target_index < len(all_items):
+            self.left_tree.selection_set(all_items[target_index])
+            self.left_tree.see(all_items[target_index])  # 确保项可见
+        
+        # 清除拖动数据
+        self.drag_data["item"] = None
+        self.drag_data["initial_index"] = -1
+        
+        # 不再显示提示消息框，为了不打断用户的操作流程
     
     def move_command(self, direction):
         """上移或下移左侧列表中的命令"""
