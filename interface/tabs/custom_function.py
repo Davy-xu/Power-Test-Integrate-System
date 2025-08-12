@@ -753,21 +753,7 @@ class CustomFunctionTab:
                         break
     
     def add_command_to_left_list(self, command):
-        """添加命令到左侧列表"""
-        # 检查是否已经存在
-        for cmd in self.selected_commands:
-            if (cmd['device_type'] == command['device_type'] and 
-                cmd['device_model'] == command['device_model'] and 
-                cmd['function_type'] == command['function_type']):
-                # 已存在，不重复添加
-                from tkinter import messagebox
-                messagebox.showinfo(
-                    "提示", 
-                    f"该指令已在列表中:\n{command['device_type']} - {command['device_model']} - {command['function_type']}",
-                    parent=self.parent_frame
-                )
-                return
-        
+        """添加命令到左侧列表，允许重复添加相同的指令"""
         # 创建扩展的命令对象，增加参数输入字段
         extended_command = command.copy()
         
